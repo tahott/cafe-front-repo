@@ -1,3 +1,6 @@
+use std::collections::HashMap;
+
+use itertools::Itertools;
 use yew::prelude::*;
 
 use crate::components::MenuCard;
@@ -9,26 +12,32 @@ pub enum BeverageType {
   TEA,
 }
 
+#[derive(PartialEq, Clone)]
 pub struct Menu {
-  beverage_type: BeverageType,
-  name: String,
-  price: u16,
+  pub beverage_type: BeverageType,
+  pub name: String,
+  pub price: u16,
 }
 
 pub enum Msg {
   ChangeTab(BeverageType),
+  AddToCart(Menu),
 }
 
 pub struct Products {
   total_menu_list: Vec<Menu>,
   current_tab_list: Vec<Html>,
+  cart: Vec<Menu>,
+  cart_price: u16,
 }
 
 impl Component for Products {
   type Message = Msg;
   type Properties = ();
 
-  fn create(_ctx: &Context<Self>) -> Self {
+  fn create(ctx: &Context<Self>) -> Self {
+    let add_to_cart = ctx.link().callback(|menu| Msg::AddToCart(menu));
+
     let total_menu_list: Vec<Menu> = vec![
       Menu { beverage_type: BeverageType::COFFEE, name: "에스프레소".to_string(), price: 3_000 },
       Menu { beverage_type: BeverageType::COFFEE, name: "아메리카노".to_string(), price: 3_500 },
@@ -37,24 +46,28 @@ impl Component for Products {
 
     let current_tab_list: Vec<Html> = total_menu_list.iter().map(|data| {
       html! {
-        <MenuCard name={data.name.clone()} price={data.price} />
+        <MenuCard menu={data.clone()} add_to_cart={add_to_cart.clone()} />
       }
     }).collect();
 
     Self {
       total_menu_list,
       current_tab_list,
+      cart: vec![],
+      cart_price: 0,
     }
   }
 
-  fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> bool {
+  fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
+    let add_to_cart = ctx.link().callback(|menu| Msg::AddToCart(menu));
+
     match msg {
       Msg::ChangeTab(key) => {
         match key {
           BeverageType::TOTAL => {
             self.current_tab_list = self.total_menu_list.iter().map(|data| {
               html! {
-                <MenuCard name={data.name.clone()} price={data.price} />
+                <MenuCard menu={data.clone()} add_to_cart={add_to_cart.clone()} />
               }
             }).collect();
           },
@@ -63,7 +76,7 @@ impl Component for Products {
               data.beverage_type == BeverageType::COFFEE
             }).map(|data| {
               html! {
-                <MenuCard name={data.name.clone()} price={data.price} />
+                <MenuCard menu={data.clone()} add_to_cart={add_to_cart.clone()} />
               }
             }).collect();
           },
@@ -72,11 +85,16 @@ impl Component for Products {
               data.beverage_type == BeverageType::TEA
             }).map(|data| {
               html! {
-                <MenuCard name={data.name.clone()} price={data.price} />
+                <MenuCard menu={data.clone()} add_to_cart={add_to_cart.clone()} />
               }
             }).collect();
           },
         }
+        true
+      },
+      Msg::AddToCart(menu) => {
+        self.cart_price += menu.price;
+        self.cart.push(menu);
         true
       }
     }
@@ -109,6 +127,8 @@ impl Component for Products {
       }
     }).collect();
 
+    let cart_state = self.cart.is_empty();
+
     html! {
       <div>
         <div class="text-sm font-medium text-center text-gray-500 border-b border-gray-200 dark:text-gray-400 dark:border-gray-700">
@@ -119,6 +139,39 @@ impl Component for Products {
         <div class="m-2 p-0 pl-[16px] pr-[16px] grid grid-cols-4 gap-[8px] md:grid-cols-8 md:gap-[16px] lg:grid-cols-8 lg:gap-[16px] lg:m-6 lg:pl-48 lg:pr-48">
           {self.current_tab_list.clone()}
         </div>
+        // cart area
+        {
+          match !cart_state {
+            true => {
+              let cart_list: Vec<Html> = self.cart.iter().fold(HashMap::new(), |mut init, data| {
+                if init.is_empty() {
+                  init.insert(data.name.clone(), 1);
+                } else {
+                  match init.get(&data.name) {
+                    Some(&num) => init.insert(data.name.clone(), num + 1),
+                    _ => init.insert(data.name.clone(), 1),
+                  };
+                }
+
+                init
+              }).iter().sorted().map(|(key, value)| {
+                html! {
+                  <div>{key}{"::"}{value}</div>
+                }
+              }).collect();
+              
+              html! {
+                <div class="absolute bottom-0 bg-amber-200 w-screen divide-y divide-rose-900 rounded-t-lg p-2">
+                  <div>{cart_list}</div>
+                  <div>{"total price: "}{self.cart_price}</div>
+                </div>
+              }
+            },
+            false => html! {
+              <div></div>
+            },
+          }
+        }
       </div>
     }
   }

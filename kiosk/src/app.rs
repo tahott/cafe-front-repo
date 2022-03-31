@@ -58,7 +58,7 @@ pub fn app() -> Html {
   }
 
   html! {
-    <div class="container mx-auto p-4 h-screen">
+    <div class="container mx-auto h-screen">
       {
         match seconds_state_handle.is_initial_screen {
           true => html! {

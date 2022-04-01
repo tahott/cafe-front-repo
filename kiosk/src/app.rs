@@ -53,7 +53,7 @@ pub fn app() -> Html {
     (),
   );
 
-  if seconds_state_handle.seconds == 30 {
+  if seconds_state_handle.seconds == 60 {
     seconds_state_handle.dispatch(StateAction::Default);
   }
 

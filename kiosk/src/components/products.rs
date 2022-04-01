@@ -1,27 +1,33 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, rc::Rc};
 
 use itertools::Itertools;
 use yew::prelude::*;
 
 use crate::components::MenuCard;
 
-#[derive(PartialEq, Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, PartialOrd, Eq, Ord, Hash)]
 pub enum BeverageType {
   TOTAL,
   COFFEE,
   TEA,
 }
 
-#[derive(PartialEq, Clone)]
+#[derive(Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
 pub struct Menu {
   pub beverage_type: BeverageType,
   pub name: String,
   pub price: u16,
 }
 
+pub enum Operator {
+  ADD,
+  SUB,
+}
+
 pub enum Msg {
   ChangeTab(BeverageType),
   AddToCart(Menu),
+  ChageCartAmount(Operator, Rc<Menu>),
 }
 
 pub struct Products {
@@ -96,7 +102,22 @@ impl Component for Products {
         self.cart_price += menu.price;
         self.cart.push(menu);
         true
-      }
+      },
+      Msg::ChageCartAmount(opt, menu) => {
+        match opt {
+          Operator::ADD => {
+            self.cart.push(Menu { beverage_type: menu.beverage_type, name: menu.name.clone(), price: menu.price  });
+            self.cart_price += menu.price;
+          },
+          Operator::SUB => {
+            if let Some(idx) = self.cart.iter().position(|data| data.name == menu.name) {
+              self.cart.swap_remove(idx);
+              self.cart_price -= menu.price;
+            }
+          },
+        }
+        true
+      },
     }
   }
 
@@ -136,34 +157,45 @@ impl Component for Products {
             {beverage_tabs}
           </ul>
         </div>
-        <div class="m-2 p-0 pl-[16px] pr-[16px] grid grid-cols-4 gap-[8px] md:grid-cols-8 md:gap-[16px] lg:grid-cols-8 lg:gap-[16px] lg:m-6 lg:pl-48 lg:pr-48">
+        <div class="m-2 p-0 pl-[16px] pr-[16px] grid grid-cols-4 gap-[8px] md:grid-cols-8 md:gap-[16px] lg:grid-cols-8 lg:gap-[16px]">
           {self.current_tab_list.clone()}
         </div>
         // cart area
         {
           match !cart_state {
             true => {
-              let cart_list: Vec<Html> = self.cart.iter().fold(HashMap::new(), |mut init, data| {
+              let cart = self.cart.clone();
+              let cart_list: Vec<Html> = cart.into_iter().fold(HashMap::new(), |mut init, data| {
                 if init.is_empty() {
-                  init.insert(data.name.clone(), 1);
+                  init.insert(data, 1);
                 } else {
-                  match init.get(&data.name) {
-                    Some(&num) => init.insert(data.name.clone(), num + 1),
-                    _ => init.insert(data.name.clone(), 1),
+                  match init.get(&data) {
+                    Some(&num) => init.insert(data, num + 1),
+                    _ => init.insert(data, 1),
                   };
                 }
 
                 init
-              }).iter().sorted().map(|(key, value)| {
+              }).iter().sorted().map(|(menu, amount)| {
+                let menu = Rc::new(menu.clone());
+                let cart_menu_sub = Rc::clone(&menu);
+                let cart_menu_add = Rc::clone(&menu);
                 html! {
-                  <div>{key}{"::"}{value}</div>
+                  <div class="flex justify-between my-1">
+                    <div>{menu.name.clone()}</div>
+                    <div class="inline-flex">
+                      <button type="button" onclick={ctx.link().callback(move |_| Msg::ChageCartAmount(Operator::SUB, cart_menu_add.to_owned()))} class="rounded-l inline-block px-3 py-1.25 bg-yellow-500 text-white font-medium text-xs leading-tight">{"-"}</button>
+                      <button disabled={true} class="inline-block px-3 py-1.25 bg-yellow-500 text-white font-medium text-xs leading-tight">{amount}</button>
+                      <button type="button" onclick={ctx.link().callback(move |_| Msg::ChageCartAmount(Operator::ADD, cart_menu_sub.to_owned()))} class="rounded-r inline-block px-3 py-1.25 bg-yellow-500 text-white font-medium text-xs leading-tight">{"+"}</button>
+                    </div>
+                  </div>
                 }
               }).collect();
               
               html! {
-                <div class="absolute bottom-0 bg-amber-200 w-screen divide-y divide-rose-900 rounded-t-lg p-2">
+                <div class="container absolute bottom-0 bg-amber-200 w-screen divide-y divide-rose-900 rounded-t-lg p-2">
                   <div>{cart_list}</div>
-                  <div>{"total price: "}{self.cart_price}</div>
+                  <div>{"₩ "}{self.cart_price}</div>
                 </div>
               }
             },

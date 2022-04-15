@@ -2,8 +2,7 @@ use std::rc::Rc;
 use gloo::timers::callback::Interval;
 use yew::prelude::*;
 
-use crate::components::InitialScreen;
-use crate::components::Products;
+use crate::components::{InitialScreen, Products, OrderCard};
 
 enum StateAction {
   Default,
@@ -58,19 +57,28 @@ pub fn app() -> Html {
   }
 
   html! {
-    <div class="container mx-auto h-screen">
-      {
-        match seconds_state_handle.is_initial_screen {
-          true => html! {
-            <div class="h-screen" {onclick}>
-              <InitialScreen />
-            </div>
-          },
-          false => html! {
-            <Products />
+    <div class="container mx-auto h-screen grid grid-cols-1 md:grid-cols-2">
+      <div>
+        {
+          match seconds_state_handle.is_initial_screen {
+            true => html! {
+              <div class="h-screen" {onclick}>
+                <InitialScreen />
+              </div>
+            },
+            false => html! {
+              <div class="h-screen"><Products /></div>
+            }
           }
         }
-      }
+      </div>
+      <div class="mx-auto w-full h-screen">
+        <div class="m-1 border border-dotted grid grid-cols-4 gap-4">
+          <OrderCard /><OrderCard />
+        </div>
+        <div class="m-1 border border-dotted grid grid-cols-4 gap-4">{"pick up noti"}</div>
+      </div>
+
     </div>
   }
 }

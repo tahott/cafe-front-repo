@@ -1,10 +1,15 @@
 use yew::prelude::*;
 
+#[derive(Properties, PartialEq)]
+pub struct Props {
+  pub order_no: String,
+}
+
 #[function_component(OrderCard)]
-pub fn order_card() -> Html {
+pub fn order_card(props: &Props) -> Html {
   html! {
     <div class="text-center p-2 border border-dotted rounded-xl bg-red-300 text-white">
-      {"001"}
+      {&props.order_no}
     </div>
   }
 }

@@ -1,9 +1,8 @@
 use std::{collections::HashMap, rc::Rc};
-
 use itertools::Itertools;
 use yew::prelude::*;
 
-use crate::components::MenuCard;
+use crate::{components::MenuCard, api::{send_order, FetchError, Receipt}};
 
 #[derive(Clone, Copy, PartialEq, PartialOrd, Eq, Ord, Hash)]
 pub enum BeverageType {
@@ -24,10 +23,22 @@ pub enum Operator {
   SUB,
 }
 
+pub enum FetchState<T> {
+  Success(T),
+  Failed(FetchError),
+}
+
+#[derive(Properties, PartialEq, Clone)]
+pub struct Props {
+  pub add_to_wating_order: Callback<String>,
+}
+
 pub enum Msg {
   ChangeTab(BeverageType),
   AddToCart(Menu),
   ChageCartAmount(Operator, Rc<Menu>),
+  SendOrder,
+  SetOrderFetchState(FetchState<Receipt>)
 }
 
 pub struct Products {
@@ -39,7 +50,7 @@ pub struct Products {
 
 impl Component for Products {
   type Message = Msg;
-  type Properties = ();
+  type Properties = Props;
 
   fn create(ctx: &Context<Self>) -> Self {
     let add_to_cart = ctx.link().callback(|menu| Msg::AddToCart(menu));
@@ -118,6 +129,26 @@ impl Component for Products {
         }
         true
       },
+      Msg::SendOrder => {
+        ctx.link().send_future(async {
+          match send_order().await {
+            Ok(receipt) => Msg::SetOrderFetchState(FetchState::Success(receipt)),
+            Err(err) => Msg::SetOrderFetchState(FetchState::Failed(err)),
+          }
+        });
+        true
+      },
+      Msg::SetOrderFetchState(fetch_state) => {
+        match fetch_state {
+            FetchState::Success(receipt) => {
+              if receipt.payment_result == true {
+                ctx.props().add_to_wating_order.emit(receipt.order_no.to_owned());
+              }
+            },
+            FetchState::Failed(e) => todo!(),
+        }
+        true
+      }
     }
   }
 
@@ -196,6 +227,7 @@ impl Component for Products {
                 <div class="container absolute bottom-0 bg-amber-200 w-screen divide-y divide-rose-900 rounded-t-lg p-2">
                   <div>{cart_list}</div>
                   <div>{"₩ "}{self.cart_price}</div>
+                  <div onclick={ctx.link().callback(|_| Msg::SendOrder)}>{"주문하기"}</div>
                 </div>
               }
             },

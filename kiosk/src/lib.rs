@@ -1,4 +1,5 @@
 mod app;
+mod api;
 mod components;
 
 use wasm_bindgen::prelude::*;

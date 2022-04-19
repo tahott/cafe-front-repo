@@ -1,5 +1,5 @@
 use std::rc::Rc;
-use gloo::timers::callback::Interval;
+use gloo::{timers::callback::Interval};
 use yew::prelude::*;
 
 use crate::components::{InitialScreen, Products, OrderCard};
@@ -30,12 +30,26 @@ impl Reducible for SecondState {
 
 #[function_component(App)]
 pub fn app() -> Html {
+  let waiting_orders = use_state(Vec::new);
   let seconds_state_handle = use_reducer(|| SecondState { is_initial_screen: true, ..Default::default() });
 
   let onclick = {
     let seconds_state_handle = seconds_state_handle.clone();
     Callback::from(move |_| {
       seconds_state_handle.dispatch(StateAction::ActionHappend);
+    })
+  };
+
+  let handle_add_to_waiting_order = {
+    let waiting_orders = waiting_orders.clone();
+    Callback::from(move |order_no: String| {
+      let order_no = order_no.to_owned();
+      let mut new_order = (*waiting_orders).clone();
+
+      new_order.push(html! {
+        <OrderCard order_no={order_no} />
+      });
+      waiting_orders.set(new_order);
     })
   };
 
@@ -67,14 +81,14 @@ pub fn app() -> Html {
               </div>
             },
             false => html! {
-              <div class="h-screen"><Products /></div>
+              <div class="h-screen"><Products add_to_wating_order={handle_add_to_waiting_order.clone()} /></div>
             }
           }
         }
       </div>
       <div class="mx-auto w-full h-screen">
         <div class="m-1 border border-dotted grid grid-cols-4 gap-4">
-          <OrderCard /><OrderCard />
+          {(*waiting_orders).clone()}
         </div>
         <div class="m-1 border border-dotted grid grid-cols-4 gap-4">{"pick up noti"}</div>
       </div>

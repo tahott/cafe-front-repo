@@ -37,6 +37,7 @@ pub struct Receipt {
   pub order_no: String,
   order_created_at: String,
   takeout: bool,
+  pub payment_result: bool,
 }
 
 #[derive(Debug, Clone, PartialEq)]

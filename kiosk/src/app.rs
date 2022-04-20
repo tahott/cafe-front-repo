@@ -1,5 +1,8 @@
 use std::rc::Rc;
-use gloo::{timers::callback::Interval};
+use gloo::{timers::callback::Interval, events::EventListener, console::console};
+use js_sys::{ArrayBuffer, JsString};
+use wasm_bindgen::{JsCast, JsValue};
+use web_sys::{EventSource, MessageEvent, Blob, console};
 use yew::prelude::*;
 
 use crate::components::{InitialScreen, Products, OrderCard};
@@ -39,6 +42,24 @@ pub fn app() -> Html {
       seconds_state_handle.dispatch(StateAction::ActionHappend);
     })
   };
+
+  use_effect_with_deps(move |_| {
+    let event_source = EventSource::new("http://localhost:3002").unwrap();
+    let listener = EventListener::new(&event_source, "message", move |event: &Event| {
+      let event = event.dyn_ref::<MessageEvent>().unwrap();
+
+      let text = event.data().dyn_into::<JsString>().unwrap();
+      let text_to_vec = text.split(",").to_vec();
+
+      if text_to_vec.len() > 0 {
+        let res = text_to_vec.iter().map(|s| {
+          s.as_string().unwrap()
+        }).collect::<Vec<String>>();
+      }
+    });
+
+    || drop(listener)
+  }, ());
 
   let handle_add_to_waiting_order = {
     let waiting_orders = waiting_orders.clone();

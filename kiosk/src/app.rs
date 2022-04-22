@@ -1,9 +1,9 @@
 use std::rc::Rc;
-use gloo::{timers::callback::Interval, events::EventListener, console::console};
-use js_sys::{ArrayBuffer, JsString};
-use wasm_bindgen::{JsCast, JsValue};
-use web_sys::{EventSource, MessageEvent, Blob, console};
-use yew::prelude::*;
+use gloo::{timers::callback::Interval, events::EventListener};
+use js_sys::{JsString};
+use wasm_bindgen::{JsCast};
+use web_sys::{EventSource, MessageEvent};
+use yew::{prelude::*};
 
 use crate::components::{InitialScreen, Products, OrderCard};
 
@@ -34,6 +34,7 @@ impl Reducible for SecondState {
 #[function_component(App)]
 pub fn app() -> Html {
   let waiting_orders = use_state(Vec::new);
+  let finished_orders = use_state(Vec::new);
   let seconds_state_handle = use_reducer(|| SecondState { is_initial_screen: true, ..Default::default() });
 
   let onclick = {
@@ -43,23 +44,38 @@ pub fn app() -> Html {
     })
   };
 
-  use_effect_with_deps(move |_| {
-    let event_source = EventSource::new("http://localhost:3002").unwrap();
-    let listener = EventListener::new(&event_source, "message", move |event: &Event| {
-      let event = event.dyn_ref::<MessageEvent>().unwrap();
+  use_effect_with_deps(
+    {
+      let finished_orders = finished_orders.clone();
+      // let event_source = EventSource::new("http://localhost:3002").unwrap();
 
-      let text = event.data().dyn_into::<JsString>().unwrap();
-      let text_to_vec = text.split(",").to_vec();
+      move |_| {
+        let event_source = EventSource::new("http://localhost:3002").unwrap();
+        let listener = EventListener::new(&event_source, "message", move |event: &Event| {
+          let event = event.dyn_ref::<MessageEvent>().unwrap();
+          let text = event.data().dyn_into::<JsString>().unwrap();
+          let text_to_vec = text.split(",").to_vec();
+  
+          let mut new_order = (*finished_orders).clone();
 
-      if text_to_vec.len() > 0 {
-        let res = text_to_vec.iter().map(|s| {
-          s.as_string().unwrap()
-        }).collect::<Vec<String>>();
+          if text_to_vec.len() > 0 {
+            text_to_vec.into_iter().for_each(|o| {
+              let order = o.as_string().unwrap();
+
+              new_order.push(html! {
+                <OrderCard order_no={order} />
+              });
+            });
+          }
+
+          finished_orders.set(new_order);
+        });
+  
+        || drop(listener)
       }
-    });
-
-    || drop(listener)
-  }, ());
+    }, 
+    (),
+  );
 
   let handle_add_to_waiting_order = {
     let waiting_orders = waiting_orders.clone();
@@ -111,7 +127,9 @@ pub fn app() -> Html {
         <div class="m-1 border border-dotted grid grid-cols-4 gap-4">
           {(*waiting_orders).clone()}
         </div>
-        <div class="m-1 border border-dotted grid grid-cols-4 gap-4">{"pick up noti"}</div>
+        <div class="m-1 border border-dotted grid grid-cols-4 gap-4" id={String::from("finished")}>
+          {(*finished_orders).clone()}
+        </div>
       </div>
 
     </div>

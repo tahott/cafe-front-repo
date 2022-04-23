@@ -1,10 +1,9 @@
 use std::rc::Rc;
 use gloo::{timers::callback::Interval, events::EventListener};
-use itertools::Itertools;
 use js_sys::{JsString};
 use wasm_bindgen::{JsCast, JsValue};
 use web_sys::{EventSource, MessageEvent, console};
-use yew::{prelude::*, virtual_dom::VNode};
+use yew::{prelude::*};
 
 use crate::components::{InitialScreen, Products, OrderCard};
 

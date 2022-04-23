@@ -188,7 +188,7 @@ impl Component for Products {
             {beverage_tabs}
           </ul>
         </div>
-        <div class="m-2 p-0 pl-[16px] pr-[16px] grid grid-cols-4 gap-[8px] md:grid-cols-8 md:gap-[16px] lg:grid-cols-8 lg:gap-[16px]">
+        <div class="m-2 p-0 pl-[16px] pr-[16px] grid grid-cols-4 gap-[8px] md:grid-cols-8 md:gap-[16px] lg:grid-cols-4 lg:gap-[16px]">
           {self.current_tab_list.clone()}
         </div>
         // cart area

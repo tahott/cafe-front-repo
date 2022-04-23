@@ -1,9 +1,10 @@
 use std::rc::Rc;
 use gloo::{timers::callback::Interval, events::EventListener};
+use itertools::Itertools;
 use js_sys::{JsString};
-use wasm_bindgen::{JsCast};
-use web_sys::{EventSource, MessageEvent};
-use yew::{prelude::*};
+use wasm_bindgen::{JsCast, JsValue};
+use web_sys::{EventSource, MessageEvent, console};
+use yew::{prelude::*, virtual_dom::VNode};
 
 use crate::components::{InitialScreen, Products, OrderCard};
 
@@ -44,10 +45,12 @@ pub fn app() -> Html {
     })
   };
 
+  let mut diff_vec: Vec<JsValue> = vec![];
+
   use_effect_with_deps(
     {
-      let finished_orders = finished_orders.clone();
-      // let event_source = EventSource::new("http://localhost:3002").unwrap();
+      let fo = finished_orders.clone();
+      let mut finished_orders = (*finished_orders).clone();
 
       move |_| {
         let event_source = EventSource::new("http://localhost:3002").unwrap();
@@ -55,20 +58,21 @@ pub fn app() -> Html {
           let event = event.dyn_ref::<MessageEvent>().unwrap();
           let text = event.data().dyn_into::<JsString>().unwrap();
           let text_to_vec = text.split(",").to_vec();
-  
-          let mut new_order = (*finished_orders).clone();
 
           if text_to_vec.len() > 0 {
             text_to_vec.into_iter().for_each(|o| {
-              let order = o.as_string().unwrap();
+              if diff_vec.contains(&o) == false {
+                diff_vec.push(o.clone());
+                let order = o.as_string().unwrap();
 
-              new_order.push(html! {
-                <OrderCard order_no={order} />
-              });
+                finished_orders.push(html! {
+                  <OrderCard order_no={order} />
+                });
+              }
             });
           }
 
-          finished_orders.set(new_order);
+          fo.set(finished_orders.clone());
         });
   
         || drop(listener)
@@ -82,7 +86,7 @@ pub fn app() -> Html {
     Callback::from(move |order_no: String| {
       let order_no = order_no.to_owned();
       let mut new_order = (*waiting_orders).clone();
-
+      console::log_2(&JsValue::from_str("waiting..."), &JsValue::from_f64(new_order.len() as f64));
       new_order.push(html! {
         <OrderCard order_no={order_no} />
       });
@@ -108,7 +112,7 @@ pub fn app() -> Html {
   }
 
   html! {
-    <div class="container mx-auto h-screen grid grid-cols-1 md:grid-cols-2">
+    <div class="container mx-auto h-screen grid grid-cols-1 gap-4 md:grid-cols-2">
       <div>
         {
           match seconds_state_handle.is_initial_screen {
@@ -124,11 +128,17 @@ pub fn app() -> Html {
         }
       </div>
       <div class="mx-auto w-full h-screen">
-        <div class="m-1 border border-dotted grid grid-cols-4 gap-4">
-          {(*waiting_orders).clone()}
+        <div class="h-2/6">
+          <div class="text-lg">{"음료 준비 중 | Preparing"}</div>
+          <div class="m-1 grid grid-cols-4 gap-4">
+            {(*waiting_orders).clone()}
+          </div>
         </div>
-        <div class="m-1 border border-dotted grid grid-cols-4 gap-4" id={String::from("finished")}>
-          {(*finished_orders).clone()}
+        <div class="h-2/6">
+          <div class="text-lg">{"음료 준비 완료 | Complete"}</div>
+          <div class="m-1 grid grid-cols-4 gap-4">
+            {(*finished_orders).clone()}
+          </div>
         </div>
       </div>
 

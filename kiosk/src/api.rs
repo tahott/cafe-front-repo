@@ -8,6 +8,8 @@ use wasm_bindgen::{JsCast, JsValue};
 use wasm_bindgen_futures::JsFuture;
 use web_sys::{RequestInit, RequestMode, Request, Response, console};
 
+use crate::components::Menu;
+
 #[derive(Serialize, Deserialize)]
 struct OrderItem {
   name: String,
@@ -93,4 +95,25 @@ pub async fn send_order() -> Result<Receipt, FetchError> {
   let receipt = json.into_serde().unwrap();
   
   Ok(receipt)
+}
+
+pub async fn get_menu() -> Result<Vec<Menu>, FetchError> {
+  let mut opts = RequestInit::new();
+  opts.method("GET");
+  opts.mode(RequestMode::Cors);
+
+  let request = Request::new_with_str_and_init(
+    "http://localhost:3000/order",
+    &opts,
+  )?;
+
+  let window = gloo::utils::window();
+  let resp_value = JsFuture::from(window.fetch_with_request(&request)).await?;
+  let resp = resp_value.dyn_into::<Response>().unwrap();
+
+  let json = JsFuture::from(resp.json()?).await?;
+
+  let menu: Vec<Menu> = json.into_serde().unwrap();
+
+  Ok(menu)
 }

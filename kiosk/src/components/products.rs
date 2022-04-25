@@ -1,18 +1,20 @@
-use std::{collections::HashMap, rc::Rc};
+use std::{collections::HashMap, rc::Rc, vec};
 use itertools::Itertools;
+use serde::{Deserialize, Serialize};
 use yew::prelude::*;
 
-use crate::{components::MenuCard, api::{send_order, FetchError, Receipt}};
+use crate::{components::MenuCard, api::{send_order, FetchError, Receipt, get_menu}};
 
-#[derive(Clone, Copy, PartialEq, PartialOrd, Eq, Ord, Hash)]
+#[derive(Clone, Copy, PartialEq, PartialOrd, Eq, Ord, Hash, Deserialize, Serialize)]
 pub enum BeverageType {
   TOTAL,
   COFFEE,
   TEA,
 }
 
-#[derive(Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
+#[derive(Clone, PartialEq, PartialOrd, Eq, Ord, Hash, Deserialize, Serialize)]
 pub struct Menu {
+  #[serde(rename="type")]
   pub beverage_type: BeverageType,
   pub name: String,
   pub price: u16,
@@ -38,7 +40,9 @@ pub enum Msg {
   AddToCart(Menu),
   ChageCartAmount(Operator, Rc<Menu>),
   SendOrder,
-  SetOrderFetchState(FetchState<Receipt>)
+  SetOrderFetchState(FetchState<Receipt>),
+  GetMenuFetchState(FetchState<Vec<Menu>>),
+  GetMenuList,
 }
 
 pub struct Products {
@@ -53,19 +57,10 @@ impl Component for Products {
   type Properties = Props;
 
   fn create(ctx: &Context<Self>) -> Self {
-    let add_to_cart = ctx.link().callback(|menu| Msg::AddToCart(menu));
+    ctx.link().send_message(Msg::GetMenuList);
 
-    let total_menu_list: Vec<Menu> = vec![
-      Menu { beverage_type: BeverageType::COFFEE, name: "에스프레소".to_string(), price: 3_000 },
-      Menu { beverage_type: BeverageType::COFFEE, name: "아메리카노".to_string(), price: 3_500 },
-      Menu { beverage_type: BeverageType::TEA, name: "홍차".to_string(), price: 4_000 },
-    ];
-
-    let current_tab_list: Vec<Html> = total_menu_list.iter().map(|data| {
-      html! {
-        <MenuCard menu={data.clone()} add_to_cart={add_to_cart.clone()} />
-      }
-    }).collect();
+    let total_menu_list = vec![];
+    let current_tab_list = vec![];
 
     Self {
       total_menu_list,
@@ -79,6 +74,29 @@ impl Component for Products {
     let add_to_cart = ctx.link().callback(|menu| Msg::AddToCart(menu));
 
     match msg {
+      Msg::GetMenuList => {
+        ctx.link().send_future(async {
+          match get_menu().await {
+            Ok(menu) => Msg::GetMenuFetchState(FetchState::Success(menu)),
+            Err(e) => Msg::GetMenuFetchState(FetchState::Failed(e)),
+          }
+        });
+        true
+      },
+      Msg::GetMenuFetchState(menu) => {
+        match menu {
+          FetchState::Success(menu) => {
+            self.total_menu_list = menu.clone();
+            self.current_tab_list = self.total_menu_list.iter().map(|data| {
+                html! {
+                  <MenuCard menu={data.clone()} add_to_cart={add_to_cart.clone()} />
+                }
+              }).collect();
+          },
+          FetchState::Failed(e) => todo!(),
+        };
+        true
+      },
       Msg::ChangeTab(key) => {
         match key {
           BeverageType::TOTAL => {

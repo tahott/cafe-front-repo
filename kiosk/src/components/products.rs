@@ -158,12 +158,12 @@ impl Component for Products {
       },
       Msg::SetOrderFetchState(fetch_state) => {
         match fetch_state {
-            FetchState::Success(receipt) => {
-              if receipt.payment_result == true {
-                ctx.props().add_to_wating_order.emit(receipt.order_no.to_owned());
-              }
-            },
-            FetchState::Failed(e) => todo!(),
+          FetchState::Success(receipt) => {
+            if receipt.payment_result == true {
+              ctx.props().add_to_wating_order.emit(receipt.order_no.to_owned());
+            }
+          },
+          FetchState::Failed(e) => todo!(),
         }
         true
       }

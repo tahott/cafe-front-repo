@@ -1,6 +1,8 @@
+
 import { useEffect, useState } from 'preact/hooks';
+import { Cart } from "../components/Cart.tsx";
 import MenuCard from '../components/MenuCard.tsx';
-import { useInterval } from '../utils/hooks.tsx';
+import { CartProvider, useInterval } from '../utils/hooks.tsx';
 import { Category, Menu } from "../utils/types.tsx";
 
 const DELAY = 1000;
@@ -37,12 +39,11 @@ export default function Kiosk({ categories, menus }: KioskProps) {
       return;
     }
 
-    const m = menus.filter((menu) => menu.key === category);
-    setCategoryMenus(m);
+    setCategoryMenus(menus.filter((menu) => menu.type === category));
   }
 
   return (
-    <>
+    <CartProvider>
       {
         !isTouch ? (
           <div class="h-full grid justify-items-center items-center text-center cursor-pointer text-2xl lg:text-3xl" onClick={handleTouch}>
@@ -66,13 +67,18 @@ export default function Kiosk({ categories, menus }: KioskProps) {
               </ul>    
             </div>
             <div class="m-2 grid grid-cols-4 gap-[8px] md:grid-cols-8 md:gap-[16px] lg:grid-cols-4 lg:gap-[16px]">
-              {
-                currentCategoryMenus.map(({ name, price }) => <MenuCard name={name} price={price} />)    
-              }
+                {
+                  currentCategoryMenus.map(({ type, name, price }) => <MenuCard type={type} name={name} price={price} />)    
+                }
             </div>
+            <Cart />
           </div>
         )
       }
-    </>
+    </CartProvider>
   )
+}
+
+function addToCart() {
+throw new Error("Function not implemented.");
 }

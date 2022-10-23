@@ -28,7 +28,7 @@ export default function Home({ data }: PageProps<KioskProps>) {
         <title>kiosk</title>
       </Head>
       <div class="container mx-auto grid grid-cols-1 gap-2 md:grid-cols-2">
-        <div class="mx-auto w-full h-screen">
+        <div class="mx-auto w-full h-screen relative">
           <Kiosk categories={data.categories} menus={data.menus} />
         </div>
         <div class="mx-auto h-screen">

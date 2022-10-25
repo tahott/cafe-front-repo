@@ -34,7 +34,7 @@ export default function Kiosk({ categories, menus }: KioskProps) {
   }
 
   const handleChangeCategory = (category: string) => {
-    if (category === 'all') {
+    if (category === 'ALL') {
       setCategoryMenus(menus);
       return;
     }

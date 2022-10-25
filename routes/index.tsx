@@ -10,13 +10,12 @@ interface KioskProps {
 
 export const handler: Handlers = {
   async GET(_req: Request, ctx: HandlerContext): Promise<Response> {
+    console.log(Deno.env.get('BASE_URL'))
+    const res = await fetch(`${Deno.env.get('BASE_URL')}/order`);
+    const menus = await res.json();
     return await ctx.render({
-      categories: [{ key: 'all', name: '전체'}, { key: 'coffee', name: '커피' }, { key: 'tea', name: '차' }],
-      menus: [
-        { key: 'coffee', name: '아메리카노', price: 3000},
-        { key: 'coffee', name: '라떼', price: 3500 },
-        { key: 'tea', name: '귤차', price: 3000 },
-      ]
+      categories: [{ key: 'ALL', name: '전체'}, { key: 'COFFEE', name: '커피' }, { key: 'TEA', name: '차' }],
+      menus,
     });
   }
 }

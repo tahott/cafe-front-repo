@@ -10,7 +10,18 @@ export default function MenuCard({ type, name, price }: MenuCardProps) {
   const { setCart } = useCart();
 
   const handleAddMenu = (type: string, name: string, price: number) => {
-    setCart((cart) => [...cart, { type, name, price }])
+    // setCart((cart) => [...cart, { type, name, price }])
+    setCart((cart) => {
+      if (!cart.has(name)) {
+        cart.set(name, { type, name, price, amount: 0 })
+      }
+
+      const prev = cart.get(name);
+
+      cart.set(name, { type, name, price, amount: prev!.amount + 1 })
+
+      return cart
+    })
   }
 
   return (

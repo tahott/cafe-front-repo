@@ -1,39 +1,52 @@
 import { useCart } from "../utils/hooks.tsx";
+import { Cart } from "../utils/types.tsx";
+import { mapLoop } from "../utils/util.ts";
+
+enum Operator {
+  ADD,
+  SUB,
+}
 
 export function Cart() {
   const { cart, setCart } = useCart();
 
+  const handleChangeCartAmount = (c: Cart, operator: Operator) => {
+    const { type, name, price } = c;
+    setCart((cart) => {
+      if (!cart.has(name)) {
+        cart.set(name, { type, name, price, amount: 0 })
+      }
+
+      const prev = cart.get(name);
+
+      cart.set(name, { type, name, price, amount: operator === Operator.ADD ? prev!.amount + 1 : prev!.amount - 1 })
+
+      return cart
+    })
+  }
+
+  const list = () => {
+    const result: unknown[] = [];
+    cart.forEach((v, k) => {
+      result.push(
+        <div class="flex justify-between">
+          <div>{k}</div>
+          <div class="inline-flex">
+            <button class="px-3 py-1" onClick={() => handleChangeCartAmount(v, Operator.SUB)}>-</button>
+            <div class="px-3 py-1">{v.amount}</div>
+            <button class="px-3 py-1" onClick={() => handleChangeCartAmount(v, Operator.ADD)}>+</button>
+          </div>
+        </div>
+      )
+    })
+
+    return result;
+  }
+
   return (
     <div class="container absolute bottom-0 w-full bg-green-200 p-2">
-      <div>
-        {
-          [...cart.reduce((list, curr) => {
-            if (!list.has(curr.name)) {
-              list.set(curr.name, Object.assign(curr, { amount: 0 }))
-            }
-
-            const menu = list.get(curr.name)
-
-            list.set(curr.name, Object.assign(menu, { amount: menu.amount + 1 }));
-
-            return list;
-          }, new Map())].map(([name, menu]) => (
-            <div class="flex justify-between">
-              <div>{name}</div>
-              <div class="inline-flex">
-                <button class="px-3 py-1" onClick={() => setCart((menus) => {
-                  const idx = menus.findLastIndex((menu) => menu.name === name)
-                  menus.splice(idx, 1)
-                  return menus
-                })}>-</button>
-                <div class="px-3 py-1">{menu.amount}</div>
-                <button class="px-3 py-1" onClick={() => setCart((menus) => [...menus, { type: menu.type, name: menu.name, price: menu.price }])}>+</button>
-              </div>
-            </div>
-          ))
-        }
-      </div>
-      <div class="text-right">{`₩: ${cart.reduce((total, menu) => total + menu.price, 0)}`}</div>
+      <div>{list()}</div>
+      <div class="text-right">{`₩: ${mapLoop(cart)}`}</div>
     </div>
   )
 }

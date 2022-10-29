@@ -1,6 +1,6 @@
 import { ComponentChildren, createContext } from "preact";
 import { useContext, useEffect, useRef, useState } from "preact/hooks";
-import { CartContext, Menu } from "./types.tsx";
+import { Cart, CartContext } from "./types.tsx";
 
 export const useInterval = (callback: () => void, delay: number | null) => {
   const savedCallback = useRef(callback);
@@ -13,10 +13,10 @@ export const useInterval = (callback: () => void, delay: number | null) => {
   }, [delay]);
 }
 
-const CartCtx = createContext<CartContext>({ cart: [], setCart: () => { } });
+const CartCtx = createContext<CartContext>({ cart: new Map(), setCart: () => { } });
 
 export const CartProvider = ({ children }: { children: ComponentChildren }) => {
-  const [cart, setCart] = useState<Array<Menu>>([]);
+  const [cart, setCart] = useState<Map<string, Cart>>(new Map());
 
   return (
     <CartCtx.Provider value={{ cart, setCart }}>{children}</CartCtx.Provider>

@@ -11,7 +11,11 @@ export interface Menu {
   price: number;
 }
 
+export interface Cart extends Menu {
+  amount: number;
+}
+
 export interface CartContext {
-  cart: Menu[];
-  setCart: StateUpdater<Menu[]>;
+  cart: Map<string, Cart>;
+  setCart: StateUpdater<Map<string, Cart>>;
 }

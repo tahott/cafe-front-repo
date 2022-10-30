@@ -1,3 +1,4 @@
+import { useEffect } from "preact/hooks";
 import { useCart } from "../utils/hooks.tsx";
 import { Cart } from "../utils/types.tsx";
 import { mapLoop } from "../utils/util.ts";
@@ -7,21 +8,39 @@ enum Operator {
   SUB,
 }
 
-export function Cart() {
+interface CartProps {
+  seconds: number;
+}
+
+export function Cart({ seconds }: CartProps) {
   const { cart, setCart } = useCart();
+
+  useEffect(() => {
+    if (seconds <= 1) {
+      setCart((cart) => {
+        cart.clear();
+        return cart;
+      })
+    }
+  }, [])
 
   const handleChangeCartAmount = (c: Cart, operator: Operator) => {
     const { type, name, price } = c;
     setCart((cart) => {
       if (!cart.has(name)) {
-        cart.set(name, { type, name, price, amount: 0 })
+        cart.set(name, { type, name, price, amount: 0 });
       }
 
       const prev = cart.get(name);
 
-      cart.set(name, { type, name, price, amount: operator === Operator.ADD ? prev!.amount + 1 : prev!.amount - 1 })
+      if (prev!.amount - 1 === 0) {
+        cart.delete(name);
+        return cart;
+      }
 
-      return cart
+      cart.set(name, { type, name, price, amount: operator === Operator.ADD ? prev!.amount + 1 : prev!.amount - 1 });
+
+      return cart;
     })
   }
 

@@ -5,8 +5,8 @@ import MenuCard from '../components/MenuCard.tsx';
 import { CartProvider, useInterval } from '../utils/hooks.tsx';
 import { Category, Menu } from "../utils/types.tsx";
 
-const DELAY = 1000;
-const WAITING_TIME = 30; // seconds
+const DELAY = 10;
+const WAITING_TIME = 3000;
 
 interface KioskProps {
   categories: Array<Category>;
@@ -71,14 +71,10 @@ export default function Kiosk({ categories, menus }: KioskProps) {
                   currentCategoryMenus.map(({ type, name, price }) => <MenuCard type={type} name={name} price={price} />)    
                 }
             </div>
-            <Cart />
+            <Cart seconds={seconds} />
           </div>
         )
       }
     </CartProvider>
   )
-}
-
-function addToCart() {
-throw new Error("Function not implemented.");
 }
